@@ -501,7 +501,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Create activity tag
     const tagHtml = `
-      <span class="activity-tag" style="background-color: ${typeInfo.color}; color: ${typeInfo.textColor}">
+      <span class="activity-tag activity-tag--${activityType}" style="background-color: ${typeInfo.color}; color: ${typeInfo.textColor}">
         ${typeInfo.label}
       </span>
     `;
@@ -861,7 +861,56 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeRangeFilter,
   };
 
+  // Dark mode toggle
+  const darkModeToggle = document.getElementById("dark-mode-toggle");
+  const darkModeIcon = document.getElementById("dark-mode-icon");
+
+  function applyDarkMode(isDark) {
+    if (isDark) {
+      document.body.classList.add("dark-mode");
+      darkModeIcon.textContent = "☀️";
+      darkModeToggle.setAttribute("aria-label", "Switch to light mode");
+      darkModeToggle.title = "Switch to light mode";
+    } else {
+      document.body.classList.remove("dark-mode");
+      darkModeIcon.textContent = "🌙";
+      darkModeToggle.setAttribute("aria-label", "Switch to dark mode");
+      darkModeToggle.title = "Switch to dark mode";
+    }
+  }
+
+  function getDarkModePreference() {
+    try {
+      const savedPreference = localStorage.getItem("darkMode");
+      if (savedPreference !== null) {
+        return savedPreference === "true";
+      }
+    } catch (e) {
+      // localStorage unavailable (e.g. private browsing)
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+
+  function saveDarkModePreference(isDark) {
+    try {
+      localStorage.setItem("darkMode", String(isDark));
+    } catch (e) {
+      // localStorage unavailable, preference won't persist
+    }
+  }
+
+  function initializeDarkMode() {
+    applyDarkMode(getDarkModePreference());
+  }
+
+  darkModeToggle.addEventListener("click", () => {
+    const isDark = document.body.classList.contains("dark-mode");
+    applyDarkMode(!isDark);
+    saveDarkModePreference(!isDark);
+  });
+
   // Initialize app
+  initializeDarkMode();
   checkAuthentication();
   initializeFilters();
   fetchActivities();
