@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const categoryFilters = document.querySelectorAll(".category-filter");
   const dayFilters = document.querySelectorAll(".day-filter");
   const timeFilters = document.querySelectorAll(".time-filter");
+  const difficultyFilters = document.querySelectorAll(".difficulty-filter");
 
   // Authentication elements
   const loginButton = document.getElementById("login-button");
@@ -40,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let searchQuery = "";
   let currentDay = "";
   let currentTimeRange = "";
+  let currentDifficulty = "";
 
   // Authentication state
   let currentUser = null;
@@ -437,6 +439,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
+      // Apply difficulty filter
+      if (currentDifficulty) {
+        if (details.difficulty && details.difficulty !== currentDifficulty) {
+          return;
+        }
+      }
+
       // Apply search filter
       const searchableContent = [
         name.toLowerCase(),
@@ -470,6 +479,9 @@ document.addEventListener("DOMContentLoaded", () => {
     Object.entries(filteredActivities).forEach(([name, details]) => {
       renderActivityCard(name, details);
     });
+
+    // Highlight activity linked from a shared URL
+    highlightSharedActivity();
   }
 
   // Function to render a single activity card
@@ -506,6 +518,11 @@ document.addEventListener("DOMContentLoaded", () => {
       </span>
     `;
 
+    // Create difficulty badge (only shown when difficulty is set)
+    const difficultyBadgeHtml = details.difficulty
+      ? `<span class="difficulty-badge difficulty-${details.difficulty.toLowerCase()}">${details.difficulty}</span>`
+      : "";
+
     // Create capacity indicator
     const capacityIndicator = `
       <div class="capacity-container ${capacityStatusClass}">
@@ -521,6 +538,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     activityCard.innerHTML = `
       ${tagHtml}
+      ${difficultyBadgeHtml}
       <h4>${name}</h4>
       <p>${details.description}</p>
       <p class="tooltip">
@@ -551,6 +569,12 @@ document.addEventListener("DOMContentLoaded", () => {
             )
             .join("")}
         </ul>
+      </div>
+      <div class="share-buttons">
+        <span class="share-label">Share:</span>
+        <button class="share-btn share-twitter" data-activity="${name}" title="Share on X (Twitter)">𝕏</button>
+        <button class="share-btn share-whatsapp" data-activity="${name}" title="Share on WhatsApp">💬</button>
+        <button class="share-btn share-copy" data-activity="${name}" title="Copy link">🔗</button>
       </div>
       <div class="activity-card-actions">
         ${
@@ -587,7 +611,104 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // Add click handlers for share buttons
+    activityCard.querySelector(".share-twitter").addEventListener("click", (e) => {
+      e.stopPropagation();
+      shareOnTwitter(name, details);
+    });
+    activityCard.querySelector(".share-whatsapp").addEventListener("click", (e) => {
+      e.stopPropagation();
+      shareOnWhatsApp(name, details);
+    });
+    activityCard.querySelector(".share-copy").addEventListener("click", (e) => {
+      e.stopPropagation();
+      copyShareLink(name, e.currentTarget);
+    });
+
     activitiesList.appendChild(activityCard);
+  }
+
+  // Generate a shareable URL for an activity
+  function getActivityShareUrl(activityName) {
+    const url = new URL(window.location.origin + window.location.pathname);
+    url.searchParams.set("activity", activityName);
+    return url.toString();
+  }
+
+  // Share activity on X (Twitter)
+  function shareOnTwitter(name, details) {
+    const url = getActivityShareUrl(name);
+    const text = `Check out ${name} at Mergington High School! ${details.description}`;
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  // Share activity on WhatsApp
+  function shareOnWhatsApp(name, details) {
+    const url = getActivityShareUrl(name);
+    const text = `Check out ${name} at Mergington High School! ${details.description} ${url}`;
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(text)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  // Copy activity link to clipboard
+  async function copyShareLink(name, button) {
+    const url = getActivityShareUrl(name);
+    let copySucceeded = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      copySucceeded = true;
+    } catch (error) {
+      // Fallback for browsers without Clipboard API
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        // eslint-disable-next-line no-restricted-globals
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        copySucceeded = true;
+      } catch (fallbackError) {
+        showMessage("Could not copy the link. Please copy it manually: " + url, "error");
+      }
+    }
+    if (copySucceeded) {
+      const originalText = button.textContent;
+      const originalTitle = button.getAttribute("title");
+      button.textContent = "✓";
+      button.title = "Copied!";
+      button.classList.add("copied");
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.title = originalTitle;
+        button.classList.remove("copied");
+      }, 2000);
+    }
+  }
+
+  // Highlight and scroll to an activity shared via URL parameter
+  function highlightSharedActivity() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedActivity = urlParams.get("activity");
+    if (!sharedActivity) return;
+    const cards = activitiesList.querySelectorAll(".activity-card");
+    cards.forEach((card) => {
+      const cardTitle = card.querySelector("h4");
+      if (cardTitle && cardTitle.textContent === sharedActivity) {
+        card.classList.add("activity-highlighted");
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
   }
 
   // Event listeners for search and filter
@@ -638,6 +759,19 @@ document.addEventListener("DOMContentLoaded", () => {
       // Update current time filter and fetch activities
       currentTimeRange = button.dataset.time;
       fetchActivities();
+    });
+  });
+
+  // Add event listeners for difficulty filter buttons
+  difficultyFilters.forEach((button) => {
+    button.addEventListener("click", () => {
+      // Update active class
+      difficultyFilters.forEach((btn) => btn.classList.remove("active"));
+      button.classList.add("active");
+
+      // Update current difficulty filter and display filtered activities
+      currentDifficulty = button.dataset.difficulty;
+      displayFilteredActivities();
     });
   });
 
