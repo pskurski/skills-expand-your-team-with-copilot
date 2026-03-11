@@ -244,31 +244,6 @@ section h3 {
   letter-spacing: 0.3px;
 }
 
-body.dark-mode .activity-tag--sports {
-  background: #1b3a1e !important;
-  color: #66bb6a !important;
-}
-
-body.dark-mode .activity-tag--arts {
-  background: #2a1a2e !important;
-  color: #ce93d8 !important;
-}
-
-body.dark-mode .activity-tag--academic {
-  background: #0d2137 !important;
-  color: #90caf9 !important;
-}
-
-body.dark-mode .activity-tag--community {
-  background: #2a1a00 !important;
-  color: #ffcc80 !important;
-}
-
-body.dark-mode .activity-tag--technology {
-  background: #2a2d4a !important;
-  color: #aab6fb !important;
-}
-
 /* Difficulty Badge */
 .difficulty-badge {
   display: inline-block;
@@ -294,21 +269,6 @@ body.dark-mode .activity-tag--technology {
 .difficulty-advanced {
   background-color: #fce4ec;
   color: #880e4f;
-}
-
-body.dark-mode .difficulty-beginner {
-  background-color: #1b3a1e;
-  color: #66bb6a;
-}
-
-body.dark-mode .difficulty-intermediate {
-  background-color: #2a1a00;
-  color: #ffcc80;
-}
-
-body.dark-mode .difficulty-advanced {
-  background-color: #2a0e1f;
-  color: #f48fb1;
 }
 
 /* Capacity Indicator */
